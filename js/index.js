@@ -144,12 +144,6 @@ function rightClickDelete(event,org,div,url){
     window.open(url)
   }
 }
-async function functionFetchAsArrayBuffer(url) {
-    var proxyUrl = proxy_url + "/proxy?url=" + encodeURIComponent(url);
-    const response = await fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/octet-stream' } });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    return await response.arrayBuffer();
-}
 
 function setVersion(){
     version = document.getElementById("ver").value;
@@ -174,14 +168,17 @@ function clearOutput(){
     urls = [];
     logSize = 0
 }
+
 let downloadAborted = false;
 
 async function downloadAll() {
     if (urls.length === 0) return;
 
     downloadAborted = false;
+    const CONCURRENCY = 5;
     const total = urls.length;
     let completed = 0;
+    let failed = 0;
 
     const bar = document.getElementById("dl-progress-bar");
     const barFill = document.getElementById("dl-bar-fill");
@@ -191,25 +188,70 @@ async function downloadAll() {
     barBtn.textContent = "cancel";
     barBtn.onclick = () => { downloadAborted = true; };
 
-    function updateBar() {
+    function updateBar(status) {
         const pct = Math.round((completed / total) * 100);
         barFill.style.width = pct + "%";
-        barLabel.textContent = completed + " / " + total;
+        barLabel.textContent = status || (completed + " / " + total + (failed > 0 ? "  (" + failed + " failed)" : ""));
     }
     updateBar();
 
-    for (let i = 0; i < urls.length; i++) {
-        if (downloadAborted) break;
-        window.open(urls[i]);
-        completed++;
-        updateBar();
-        await new Promise(r => setTimeout(r, 300)); // small delay between each
+    const zip = new JSZip();
+    const usedNames = {};
+    function uniqueName(url) {
+        let name = url.split('/').pop().split('?')[0] || "file";
+        if (usedNames[name] !== undefined) {
+            usedNames[name]++;
+            const dot = name.lastIndexOf('.');
+            name = dot >= 0
+                ? name.slice(0, dot) + "_" + usedNames[name] + name.slice(dot)
+                : name + "_" + usedNames[name];
+        } else {
+            usedNames[name] = 0;
+        }
+        return name;
+    }
+
+    const queue = [...urls];
+    async function worker() {
+        while (queue.length > 0 && !downloadAborted) {
+            const url = queue.shift();
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const buffer = await response.arrayBuffer();
+                zip.file(uniqueName(url), buffer);
+            } catch(e) {
+                failed++;
+            }
+            completed++;
+            updateBar();
+        }
+    }
+
+    const workers = [];
+    for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
+    await Promise.all(workers);
+
+    if (!downloadAborted && completed > failed) {
+        updateBar("zipping...");
+        const blob = await zip.generateAsync({ type: "blob" }, (meta) => {
+            barFill.style.width = meta.percent.toFixed(0) + "%";
+            barLabel.textContent = "zipping... " + meta.percent.toFixed(0) + "%";
+        });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = "assets.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
     }
 
     bar.style.display = "none";
     barBtn.textContent = "download all";
     barBtn.onclick = downloadAll;
 }
+
 function closeControlsWindow(){
     var controls = document.getElementsByClassName("controls")[0];
     controls.style.display = "none";
