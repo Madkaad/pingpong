@@ -1,0 +1,57 @@
+<DOC TYPE HTML>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="content-holder">
+        <div class="url" id="url-top" style="margin-top: 1vh;">
+            <div class="input-focus">
+            <input type="text" id="ver" class="ver_input" placeholder="CDN ver">
+            <input type="text" id="base" class="base_input" placeholder="base url">
+            <input type="text" id="url" class="url_input" placeholder="URL">
+            </div>
+            <button onclick="clearOutput()" class="url_button">clear</button>
+            <button id="download" onclick="downloadAll()" class="url_button">download all</button>
+        </div>
+        <div id="dl-progress-bar" style="display:none;">
+            <div id="dl-bar-track">
+                <div id="dl-bar-fill"></div>
+            </div>
+            <div id="dl-bar-label">0 / 0</div>
+        </div>
+        <div class="url" id="url-bottom">
+            <button id="repBt" class="repeat_button">repeat from</button>
+            <input type="text" style="margin-left: 1vh;" id="rep_1" class="repeat_input" placeholder="0">
+            <div class="dash">to</div>
+            <input type="text" id="rep_2" class="repeat_input" placeholder="10">
+        </div>
+        <div class="output">
+            <div class="output-left" style="width: 10vh;" id="output-left">
+            </div>
+            <div class="resizer" id="resizer"></div>
+            <div class="output-right" id="output-right">
+            </div>
+        </div>
+    </div>
+    <div id="error" class="fade" style="opacity: 0;">
+        <div class="error-popup">
+            Server returned possible CORS error
+            <div class="error-arrow"></div>
+        </div>
+    </div>
+    <div class="controls">
+        how to use
+        <div class="control-close" onclick="closeControlsWindow()">X</div>
+        <div class="control-option" style="margin-top: 3vh;"> type in url bar and press enter to generate a link </div>
+        <div class="control-option" style="margin-top: 1vh;"> right click a url to remove it</div>
+        <div class="control-option" style="margin-top: 1vh;">  [ repeat from ]  will take the url and add the numbers in the range</div>
+        <div class="control-option" style="margin-top: 1vh;"> [ download all ] will download all the urls you have in the list</div>
+    </div>
+    <script src="js/md5.js"></script>
+    <script src="js/index.js"></script>
+</body>
