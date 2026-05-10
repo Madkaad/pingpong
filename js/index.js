@@ -144,12 +144,6 @@ function rightClickDelete(event,org,div,url){
     window.open(url)
   }
 }
-async function functionFetchAsArrayBuffer(url) {
-    var proxyUrl = proxy_url + "/proxy?url=" + encodeURIComponent(url);
-    const response = await fetch(proxyUrl, { method: 'GET', headers: { 'Accept': 'application/octet-stream' } });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    return await response.arrayBuffer();
-}
 
 function setVersion(){
     version = document.getElementById("ver").value;
@@ -174,6 +168,7 @@ function clearOutput(){
     urls = [];
     logSize = 0
 }
+
 let downloadAborted = false;
 
 async function downloadAll() {
@@ -201,8 +196,6 @@ async function downloadAll() {
     updateBar();
 
     const zip = new JSZip();
-
-    // Track used filenames to avoid collisions
     const usedNames = {};
     function uniqueName(url) {
         let name = url.split('/').pop().split('?')[0] || "file";
@@ -223,7 +216,9 @@ async function downloadAll() {
         while (queue.length > 0 && !downloadAborted) {
             const url = queue.shift();
             try {
-                const buffer = await functionFetchAsArrayBuffer(url);
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const buffer = await response.arrayBuffer();
                 zip.file(uniqueName(url), buffer);
             } catch(e) {
                 failed++;
@@ -256,6 +251,7 @@ async function downloadAll() {
     barBtn.textContent = "download all";
     barBtn.onclick = downloadAll;
 }
+
 function closeControlsWindow(){
     var controls = document.getElementsByClassName("controls")[0];
     controls.style.display = "none";
